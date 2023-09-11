@@ -1,7 +1,8 @@
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 import time
 import os
@@ -164,12 +165,12 @@ def main(rank1, rank0):
 
     train_duration = np.mean(np.array(train_time_sample))
     # Testing
-    # if os.path.exists(save_dir + ".ckpt.index"):
-    #     saver.restore(sess, save_dir + ".ckpt")
-    #     print('Loaded the  best ckpt.')
-    # test_cost, test_acc, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
-    # print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "cost=", "{:.5f}".format(test_cost),
-    #       "accuracy=", "{:.5f}".format(test_acc), "training time per epoch=", "{:.5f}".format(train_duration))
+    if os.path.exists(save_dir + ".ckpt.index"):
+        saver.restore(sess, save_dir + ".ckpt")
+        print('Loaded the  best ckpt.')
+    test_cost, test_acc, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+    print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "cost=", "{:.5f}".format(test_cost),
+          "accuracy=", "{:.5f}".format(test_acc), "training time per epoch=", "{:.5f}".format(train_duration))
 
 
 if __name__ == "__main__":
