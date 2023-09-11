@@ -1,0 +1,12 @@
+name: asgcn
+channels:
+  - defaults
+dependencies:
+  - cudatoolkit=11.8.0=h6a678d5_0
+  - python=3.10.12=h955ad1f_0
+  - scipy=1.10.0=py310hd5efca6_0
+  - pip:
+    - chardet==5.2.0
+    - networkx==3.1
+    - nvidia-cudnn-cu11==8.6.0.163
+    - tensorflow==2.13.0
