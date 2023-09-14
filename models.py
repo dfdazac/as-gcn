@@ -224,14 +224,18 @@ class GCNAdapt(Model):
     def _accuracy(self):
         self.accuracy = accuracy(self.outputs, self.placeholders['labels'])
 
-    def _attention(self, support, x_u, x_v, prob):
+    def _attention(self, support, x_u, x_v, q):
         sample_params = self.sample_params
         n_v = tf.shape(support)[0]
         n_u = tf.shape(support)[1]
-        h_v = tf.matmul(x_v, tf.expand_dims(sample_params[:,0], -1))          # v*1
-        h_u = tf.matmul(x_u, tf.expand_dims(sample_params[:,1], -1))          # u*1
-        attention = 1/tf.cast(n_u, tf.float32) * (tf.nn.relu(h_v + tf.reshape(h_u, (1, n_u))) + 1)       # v*u
-        support = support*(attention/tf.reshape(prob, (1, n_u)))
+        if FLAGS.attention:
+            h_v = tf.matmul(x_v, tf.expand_dims(sample_params[:,0], -1))          # v*1
+            h_u = tf.matmul(x_u, tf.expand_dims(sample_params[:,1], -1))          # u*1
+            attention = 1/tf.cast(n_u, tf.float32) * (tf.nn.relu(h_v + tf.reshape(h_u, (1, n_u))) + 1)       # v*u
+        else:
+            attention = 1 / tf.cast(n_u, tf.float32)
+
+        support = support*(attention / tf.reshape(q, (1, n_u)))
 
         return support
 
