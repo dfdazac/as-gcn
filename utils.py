@@ -1,4 +1,4 @@
-import numpy as np
+import scipy.sparse as sp
 import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
@@ -9,7 +9,10 @@ from scipy.linalg import qr
 from sparse_tensor_utils import *
 import json
 from networkx.readwrite import json_graph
+import torch_geometric.utils as pygutils
+import torch
 
+import gflow_sampling.modules.data as gfsdata
 
 def parse_index_file(filename):
     """Parse index file."""
@@ -483,30 +486,48 @@ def prepare_pubmed(dataset, max_degree):
     return norm_adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index
 
 
-def prepare_reddit(max_degree):
+def prepare_gfsdata(dataset, max_degree):
+    dataset_to_fn = {
+        'reddit': gfsdata.get_reddit,
+        'flickr': gfsdata.get_flickr,
+        'arxiv': gfsdata.get_arxiv,
+        'yelp': gfsdata.get_yelp,
+        'products': gfsdata.get_products
+    }
 
-    adj, features, y_train, y_val, y_test, train_index, val_index, test_index = loadRedditFromNPZ("data/reddit")
-    adj = adj + adj.T
+    if dataset in dataset_to_fn:
+        data, num_features, num_classes = dataset_to_fn[dataset](root='data')
+    else:
+        raise ValueError(f'Unknown dataset {dataset}')
 
-    y_train = transferLabel2Onehot(y_train, 41)
-    y_val = transferLabel2Onehot(y_val, 41)
-    y_test = transferLabel2Onehot(y_test, 41)
+    # data.edge_index contains the edges in the graph.
+    # We use them to build a sparse adjacency matrix.
+    adj = pygutils.to_scipy_sparse_matrix(data.edge_index,
+                                          num_nodes=data.num_nodes).tocsr()
+    train_mask = data.train_mask.numpy()
+    val_mask = data.val_mask.numpy()
+    test_mask = data.test_mask.numpy()
 
-    features = sp.lil_matrix(features)
+    label_vectors = torch.zeros(data.num_nodes, num_classes)
+    label_vectors.scatter_(1, data.y.unsqueeze(-1), 1.0).numpy()
+
+    y_train = label_vectors[train_mask]
+    y_val = label_vectors[val_mask]
+    y_test = label_vectors[test_mask]
+
+    train_index = np.where(train_mask)[0]
     adj_train = adj[train_index, :][:, train_index]
-    num_train = adj_train.shape[0]
-    input_dim = features.shape[1]
+    val_index = np.where(val_mask)[0]
+    test_index = np.where(test_mask)[0]
 
-    mask = []
+    features = data.x.numpy()
+    train_features = features[train_index]
+    input_dim = features.shape[1]
 
     norm_adj_train = nontuple_preprocess_adj(adj_train)
     norm_adj = nontuple_preprocess_adj(adj)
 
-    # Some preprocessing
-    features = nontuple_preprocess_features(features).todense()
-    train_features = norm_adj_train.dot(features[train_index])
-    features = norm_adj.dot(features)
-
+    # adj_train, adj_val_train = norm_adj_train, norm_adj_train
     adj_train, adj_val_train = compute_adjlist(norm_adj_train, max_degree)
     train_features = np.concatenate((train_features, np.zeros((1, input_dim))))
 
@@ -514,8 +535,9 @@ def prepare_reddit(max_degree):
 
 
 def prepare_dataset(dataset, max_degree):
-    if dataset == 'reddit':
-        return prepare_reddit(max_degree)
+    if dataset in ('reddit', 'flickr', 'arxiv', 'yelp', 'products'):
+        # TODO: Remember that Yelp is a multi-label dataset!
+        return prepare_gfsdata(dataset, max_degree)
     elif dataset in ('cora', 'citeseer', 'pubmed'):
         return prepare_pubmed(dataset, max_degree)
     else:
