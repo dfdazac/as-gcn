@@ -27,20 +27,26 @@ seed = 123
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+
 flags.DEFINE_string('model', 'gcn_adapt', 'Model string.')  # 'gcn', 'gcn_appr'
-flags.DEFINE_bool('attention', True, 'If use attention mechanism.')
-flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 300, 'Number of epochs to train.')
+
 flags.DEFINE_integer('hidden1', 16, 'Number of units in hidden layer 1.')
+flags.DEFINE_bool('attention', True, 'If use attention mechanism.')
 flags.DEFINE_float('dropout', 0.0, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_integer('skip', 0, 'If use skip connection.')
+flags.DEFINE_float('var', 0.5, 'If use variance reduction.')
+
+flags.DEFINE_string('objective', 'multiclass', 'Training objective: multiclass or multilabel.')
+flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
+flags.DEFINE_integer('epochs', 300, 'Number of epochs to train.')
 flags.DEFINE_integer('early_stopping', 30, 'Tolerance for early stopping (# of epochs).')
+
+flags.DEFINE_integer('rank', 128, 'The number of nodes per layer.')
 flags.DEFINE_integer('max_degree', 32, 'Maximum degree for constructing the adjacent matrix.')
 flags.DEFINE_string('gpu', '0', 'The gpu to be applied.')
 flags.DEFINE_string('sampler_device', 'cpu', 'The device for sampling: cpu or gpu.')
-flags.DEFINE_integer('rank', 128, 'The number of nodes per layer.')
-flags.DEFINE_integer('skip', 0, 'If use skip connection.')
-flags.DEFINE_float('var', 0.5, 'If use variance reduction.')
+
 flags.DEFINE_integer('seed', 123, 'Random seed.')
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
 
@@ -120,8 +126,8 @@ def main(rank1, rank0):
     def evaluate(features, support, prob_norm, labels, mask, placeholders):
         t_test = time.time()
         feed_dict_val = construct_feed_dict_with_prob(features, support, prob_norm, labels, mask, placeholders)
-        outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
-        return outs_val[0], outs_val[1], (time.time() - t_test)
+        outs_val = sess.run([model.loss, model.accuracy, model.f1_score], feed_dict=feed_dict_val)
+        return outs_val[0], outs_val[1], outs_val[2], (time.time() - t_test)
 
     # Init variables
     sess.run(tf.global_variables_initializer(), feed_dict={placeholders['adj']: adj_train,
@@ -165,7 +171,7 @@ def main(rank1, rank0):
         train_time_sample.append(time.time()-t1)
         train_time.append(time.time()-t1-sample_time)
         # Validation
-        cost, acc, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+        cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
         acc_val.append(acc)
         # if epoch > 50 and acc>max_acc:
         #     max_acc = acc
@@ -174,16 +180,18 @@ def main(rank1, rank0):
         # Print results
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
               "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost),
-              "val_acc=", "{:.5f}".format(acc), "time=", "{:.5f}".format(train_time_sample[epoch]))
+              "val_acc=", "{:.5f}".format(acc),
+              "val_f1=",  "{:.5f}".format(f1),  "time=", "{:.5f}".format(train_time_sample[epoch]))
 
     train_duration = np.mean(np.array(train_time_sample))
     # Testing
     if os.path.exists(save_dir + ".ckpt.index"):
         saver.restore(sess, save_dir + ".ckpt")
         print('Loaded the  best ckpt.')
-    test_cost, test_acc, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+    test_cost, test_acc, test_f1, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
     print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "cost=", "{:.5f}".format(test_cost),
-          "accuracy=", "{:.5f}".format(test_acc), "training time per epoch=", "{:.5f}".format(train_duration))
+          "accuracy=", "{:.5f}".format(test_acc),
+          "f1=", "{:.5f}".format(test_f1), "training time per epoch=", "{:.5f}".format(train_duration))
 
 
 if __name__ == "__main__":

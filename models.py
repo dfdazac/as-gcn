@@ -217,12 +217,16 @@ class GCNAdapt(Model):
             self.loss += FLAGS.weight_decay * tf.nn.l2_loss(var)
 
         # Cross entropy error
-        self.loss += softmax_cross_entropy(self.outputs, self.placeholders['labels'])
+        if FLAGS.objective == 'multiclass':
+            self.loss += softmax_cross_entropy(self.outputs, self.placeholders['labels'])
+        elif FLAGS.objective == 'multilabel':
+            self.loss += binary_cross_entropy(self.outputs, self.placeholders['labels'])
 
         self.loss += FLAGS.var*self.reg_loss
 
     def _accuracy(self):
         self.accuracy = accuracy(self.outputs, self.placeholders['labels'])
+        self.f1_score = multilabel_f1_score(self.outputs, self.placeholders['labels'])
 
     def _attention(self, support, x_u, x_v, q):
         sample_params = self.sample_params
