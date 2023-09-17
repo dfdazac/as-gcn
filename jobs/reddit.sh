@@ -1,6 +1,6 @@
 #!/bin/sh
 #SBATCH --job-name=asgcn
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH -N 1
 #SBATCH -C A6000
 #SBATCH --gres=gpu:1
