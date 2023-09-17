@@ -15,12 +15,18 @@ def transferRedditDataFormat(dataset_dir, dataset):
 
     labels = {conversion(k):lab_conversion(v) for k,v in labels.items()}
 
+    train_ids, val_ids, test_ids = [], [], []
+    for node, data in G.nodes(data=True):
+        if 'val' in data and 'test' in data:
+            if data['val'] or data['test']:
+                if data['val']:
+                    val_ids.append(node)
+                else:
+                    test_ids.append(node)
+            else:
+                train_ids.append(node)
 
-    train_ids = [n for n in G.nodes() if not G.node[n]['val'] and not G.node[n]['test']]
-    test_ids = [n for n in G.nodes() if G.node[n]['test']]
-    val_ids = [n for n in G.nodes() if G.node[n]['val']]
     train_labels = [labels[i] for i in train_ids]
-    print(len(train_labels[0]))
     test_labels = [labels[i] for i in test_ids]
     val_labels = [labels[i] for i in val_ids]
     feats = np.load(dataset_dir + dataset + "-feats.npy")
@@ -28,7 +34,7 @@ def transferRedditDataFormat(dataset_dir, dataset):
     feats[:, 0] = np.log(feats[:, 0] + 1.0)
     feats[:, 1] = np.log(feats[:, 1] - min(np.min(feats[:, 1]), -1))
     feat_id_map = json.load(open(dataset_dir + dataset + "-id_map.json"))
-    feat_id_map = {conversion(id):int(val) for id, val in feat_id_map.iteritems()}
+    feat_id_map = {conversion(id):int(val) for id, val in feat_id_map.items()}
     #feat_id_map = {conversion(k):int(v) for k,v in feat_id_map.items()}
     # train_feats = feats[[feat_id_map[id] for id in train_ids]]
     # test_feats = feats[[feat_id_map[id] for id in test_ids]]
@@ -37,7 +43,7 @@ def transferRedditDataFormat(dataset_dir, dataset):
     adj = sp.lil_matrix((numNode,numNode))
     #adj = sp.csr_matrix((numNode,numNode))
     for edge in G.edges():
-        adj[feat_id_map[edge[0]], feat_id_map[edge[1]]] = 1
+        adj[edge[0], edge[1]] = 1
     sp.save_npz(dataset_dir+dataset+"_adj", adj.tocsr())
 
     train_index = [feat_id_map[id] for id in train_ids]

@@ -513,3 +513,10 @@ def prepare_reddit(max_degree):
     return norm_adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index
 
 
+def prepare_dataset(dataset, max_degree):
+    if dataset == 'reddit':
+        return prepare_reddit(max_degree)
+    elif dataset in ('cora', 'citeseer', 'pubmed'):
+        return prepare_pubmed(dataset, max_degree)
+    else:
+        raise ValueError(f'Unknown dataset {dataset}')

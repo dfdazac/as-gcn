@@ -42,7 +42,7 @@ tf.set_random_seed(seed)
 def main(rank1, rank0):
 
     # Prepare data
-    adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index = prepare_pubmed(FLAGS.dataset, FLAGS.max_degree)
+    adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index = prepare_dataset(FLAGS.dataset, FLAGS.max_degree)
     print('preparation done!')
 
     max_degree = FLAGS.max_degree
