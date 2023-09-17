@@ -1,6 +1,15 @@
 from __future__ import division
 from __future__ import print_function
 
+# Warning: depending on Pytorch and Tensorflow versions, it's necessary to
+# import Pytorch before Tensorflow (even if Pytorch is not needed here),
+# to prevent the code from getting stuck.
+# See https://github.com/pytorch/pytorch/issues/97580
+#     https://github.com/tensorflow/tensorflow/issues/60109
+
+# noinspection PyUnresolvedReferences
+import torch
+
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
