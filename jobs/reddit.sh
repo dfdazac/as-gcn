@@ -9,7 +9,6 @@
 source activate asgcn
 python run_pubmed.py \
 --dataset reddit \
---epochs 10 \
 --hidden1 64 \
 --noattention \
 --rank 256 \
