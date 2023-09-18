@@ -1,9 +1,10 @@
 #!/bin/sh
-#SBATCH --job-name=asgcn
+#SBATCH --job-name=reddit-lr1e-2
 #SBATCH --time=02:00:00
 #SBATCH -N 1
 #SBATCH -C A6000
 #SBATCH --gres=gpu:1
+#SBATCH --output=reddit_lr1e-2_%A_%a.out
 
 
 source activate asgcn
