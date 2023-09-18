@@ -508,8 +508,11 @@ def prepare_gfsdata(dataset, max_degree):
     val_mask = data.val_mask.numpy()
     test_mask = data.test_mask.numpy()
 
-    label_vectors = torch.zeros(data.num_nodes, num_classes)
-    label_vectors.scatter_(1, data.y.unsqueeze(-1), 1.0).numpy()
+    if data.y.dim() == 1:
+        label_vectors = torch.zeros(data.num_nodes, num_classes)
+        label_vectors.scatter_(1, data.y.unsqueeze(-1), 1.0).numpy()
+    else:
+        label_vectors = data.y.numpy()
 
     y_train = label_vectors[train_mask]
     y_val = label_vectors[val_mask]
