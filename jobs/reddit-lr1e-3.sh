@@ -2,7 +2,7 @@
 #SBATCH --job-name=reddit-lr1e-3
 #SBATCH --time=02:00:00
 #SBATCH -N 1
-#SBATCH -C A6000
+#SBATCH -C A4000
 #SBATCH --gres=gpu:1
 #SBATCH --output=reddit_lr1e-3_%A_%a.out
 
