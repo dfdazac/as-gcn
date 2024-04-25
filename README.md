@@ -2,6 +2,8 @@
 
 **Note:** This is a fork of the original [AS-GCN repository](https://github.com/huangwb/AS-GCN), adapted to a more recent version of Tensorflow and incorporating an ablation where attention is not used in the GCN classifier.
 
+---
+
 We provide Tensorflow implementations for the paper "Adaptive Sampling Towards Fast Graph Representation Learning". You need to install Tensorflow and other related python packages, e.g. scypy, networkx, etc. Our code is based on the orginal GCN framework, and takes inspirations from GraphSAGE and FastGCN. The core of this code is that we separate the sampling (i.e. sampler) and propagation (i.e. propagator) processes, both of which are implemented by tensorflow. 
 
 Please note that it is possible that the results by this code would be slightly different to those reported in the paper due to the random noise and some post-modifications of the code.

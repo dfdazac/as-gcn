@@ -11,6 +11,7 @@ import json
 from networkx.readwrite import json_graph
 import torch_geometric.utils as pygutils
 import torch
+from functools import partial
 
 import gflow_sampling.modules.data as gfsdata
 
@@ -486,13 +487,16 @@ def prepare_pubmed(dataset, max_degree):
     return norm_adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index
 
 
-def prepare_gfsdata(dataset, max_degree):
+def prepare_gfsdata(dataset, max_degree, seed=None):
     dataset_to_fn = {
         'reddit': gfsdata.get_reddit,
         'flickr': gfsdata.get_flickr,
         'arxiv': gfsdata.get_arxiv,
         'yelp': gfsdata.get_yelp,
-        'products': gfsdata.get_products
+        'products': gfsdata.get_products,
+        'proteins': gfsdata.get_proteins,
+        'blogcat': gfsdata.get_blogcat,
+        'patents': partial(gfsdata.get_linkx_dataset, seed=seed)
     }
 
     if dataset in dataset_to_fn:

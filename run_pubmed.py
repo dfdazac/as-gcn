@@ -38,9 +38,9 @@ flags.DEFINE_float('var', 0.5, 'If use variance reduction.')
 
 flags.DEFINE_string('objective', 'multiclass', 'Training objective: multiclass or multilabel.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
+flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_integer('epochs', 300, 'Number of epochs to train.')
-flags.DEFINE_integer('early_stopping', 30, 'Tolerance for early stopping (# of epochs).')
+flags.DEFINE_integer('early_stopping', 100, 'Tolerance for early stopping (# of epochs).')
 
 flags.DEFINE_integer('rank', 128, 'The number of nodes per layer.')
 flags.DEFINE_integer('max_degree', 32, 'Maximum degree for constructing the adjacent matrix.')
