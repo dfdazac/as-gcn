@@ -123,13 +123,14 @@ def main(rank1, rank0):
                             log_device_placement=False)
     sess = tf.Session(config=config)
 
-    def save_model(sess, saver, checkpoint_dir):
+    def save_model(sess, saver, checkpoint_path):
+        checkpoint_dir = os.path.dirname(checkpoint_path)
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
-        saver.save(sess, os.path.join(checkpoint_dir, "model.ckpt"))
+        saver.save(sess, checkpoint_path)
 
     # Evaluation function explicitly set to use only CPU
-    def evaluate(features, support, prob_norm, labels, mask, placeholders):
+    def evaluate(features, support, prob_norm, labels, mask, placeholders, checkpoint_path):
         # Create a new CPU-only session configuration
         config_cpu = tf.ConfigProto(
             device_count={"GPU": 0},  # Disable GPU usage
@@ -143,7 +144,7 @@ def main(rank1, rank0):
 
             # Ensure variables from the original session are loaded into the CPU-only session
             # Restore model parameters from the correct checkpoint
-            saver.restore(cpu_sess, os.path.join(checkpoint_dir, "model.ckpt"))
+            saver.restore(cpu_sess, checkpoint_path)
 
             # Perform the evaluation using the CPU
             t_test = time.time()
@@ -159,8 +160,8 @@ def main(rank1, rank0):
 
     # Prepare training
     saver = tf.train.Saver()
-    checkpoint_dir = "tmp/model_checkpoints"
-    save_dir = "tmp/" + FLAGS.dataset + '_' + str(FLAGS.skip) + '_' + str(FLAGS.var) + '_' + str(FLAGS.gpu)
+    checkpoint_path = os.path.join('checkpoints', f'{FLAGS.dataset}-{FLAGS.hidden1}', 'model.ckpt')
+    # save_dir = "tmp/" + FLAGS.dataset + '_' + str(FLAGS.skip) + '_' + str(FLAGS.var) + '_' + str(FLAGS.gpu)
     acc_val = []
     acc_train = []
     train_time = []
@@ -197,8 +198,8 @@ def main(rank1, rank0):
 
         # Validation
         if (epoch + 1) % FLAGS.eval_frequency == 0:
-            save_model(sess, saver, checkpoint_dir)
-            cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+            save_model(sess, saver, checkpoint_path)
+            cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders, checkpoint_path)
             acc_val.append(acc)
 
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
@@ -209,11 +210,8 @@ def main(rank1, rank0):
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]))
 
     train_duration = np.mean(np.array(train_time_sample))
-    # Testing
-    if os.path.exists(save_dir + ".ckpt.index"):
-        saver.restore(sess, save_dir + ".ckpt")
-        print('Loaded the  best ckpt.')
-    test_cost, test_acc, test_f1, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+
+    test_cost, test_acc, test_f1, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders, checkpoint_path)
     print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "test_loss=", "{:.5f}".format(test_cost),
           "test_acc=", "{:.5f}".format(test_acc),
           "test_f1=", "{:.5f}".format(test_f1), "training time per epoch=", "{:.5f}".format(train_duration))
