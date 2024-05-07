@@ -46,6 +46,7 @@ flags.DEFINE_integer('rank', 128, 'The number of nodes per layer.')
 flags.DEFINE_integer('max_degree', 32, 'Maximum degree for constructing the adjacent matrix.')
 flags.DEFINE_string('gpu', '0', 'The gpu to be applied.')
 flags.DEFINE_string('sampler_device', 'cpu', 'The device for sampling: cpu or gpu.')
+flags.DEFINE_integer('eval_frequency', 10, 'Number of epochs between evaluations.')
 
 flags.DEFINE_integer('seed', 123, 'Random seed.')
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
@@ -193,20 +194,19 @@ def main(rank1, rank0):
 
         train_time_sample.append(time.time()-t1)
         train_time.append(time.time()-t1-sample_time)
-        
-        # Validation
-        save_model(sess, saver, checkpoint_dir)
-        cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
-        acc_val.append(acc)
-        # if epoch > 50 and acc>max_acc:
-        #     max_acc = acc
-        #     saver.save(sess, save_dir + ".ckpt")
 
-        # Print results
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
-              "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost),
-              "val_acc=", "{:.5f}".format(acc),
-              "val_f1=",  "{:.5f}".format(f1),  "time=", "{:.5f}".format(train_time_sample[epoch]))
+        # Validation
+        if (epoch + 1) % FLAGS.eval_frequency == 0:
+            save_model(sess, saver, checkpoint_dir)
+            cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
+            acc_val.append(acc)
+
+            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
+                  "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost),
+                  "val_acc=", "{:.5f}".format(acc),
+                  "val_f1=",  "{:.5f}".format(f1),  "time=", "{:.5f}".format(train_time_sample[epoch]))
+        else:
+            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]))
 
     train_duration = np.mean(np.array(train_time_sample))
     # Testing
@@ -214,9 +214,9 @@ def main(rank1, rank0):
         saver.restore(sess, save_dir + ".ckpt")
         print('Loaded the  best ckpt.')
     test_cost, test_acc, test_f1, test_duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
-    print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "cost=", "{:.5f}".format(test_cost),
-          "accuracy=", "{:.5f}".format(test_acc),
-          "f1=", "{:.5f}".format(test_f1), "training time per epoch=", "{:.5f}".format(train_duration))
+    print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "test_loss=", "{:.5f}".format(test_cost),
+          "test_acc=", "{:.5f}".format(test_acc),
+          "test_f1=", "{:.5f}".format(test_f1), "training time per epoch=", "{:.5f}".format(train_duration))
 
 
 if __name__ == "__main__":
