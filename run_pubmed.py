@@ -122,11 +122,33 @@ def main(rank1, rank0):
                             log_device_placement=False)
     sess = tf.Session(config=config)
 
-    # Define model evaluation function
+    def save_model(sess, saver, checkpoint_dir):
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        saver.save(sess, os.path.join(checkpoint_dir, "model.ckpt"))
+
+    # Evaluation function explicitly set to use only CPU
     def evaluate(features, support, prob_norm, labels, mask, placeholders):
-        t_test = time.time()
-        feed_dict_val = construct_feed_dict_with_prob(features, support, prob_norm, labels, mask, placeholders)
-        outs_val = sess.run([model.loss, model.accuracy, model.f1_score], feed_dict=feed_dict_val)
+        # Create a new CPU-only session configuration
+        config_cpu = tf.ConfigProto(
+            device_count={"GPU": 0},  # Disable GPU usage
+            allow_soft_placement=True,
+            log_device_placement=False
+        )
+
+        with tf.Session(config=config_cpu) as cpu_sess:
+            # Import the current graph into the new CPU-only session
+            cpu_sess.graph.as_default()
+
+            # Ensure variables from the original session are loaded into the CPU-only session
+            # Restore model parameters from the correct checkpoint
+            saver.restore(cpu_sess, os.path.join(checkpoint_dir, "model.ckpt"))
+
+            # Perform the evaluation using the CPU
+            t_test = time.time()
+            feed_dict_val = construct_feed_dict_with_prob(features, support, prob_norm, labels, mask, placeholders)
+            outs_val = cpu_sess.run([model.loss, model.accuracy, model.f1_score], feed_dict=feed_dict_val)
+
         return outs_val[0], outs_val[1], outs_val[2], (time.time() - t_test)
 
     # Init variables
@@ -136,6 +158,7 @@ def main(rank1, rank0):
 
     # Prepare training
     saver = tf.train.Saver()
+    checkpoint_dir = "tmp/model_checkpoints"
     save_dir = "tmp/" + FLAGS.dataset + '_' + str(FLAGS.skip) + '_' + str(FLAGS.var) + '_' + str(FLAGS.gpu)
     acc_val = []
     acc_train = []
@@ -170,7 +193,9 @@ def main(rank1, rank0):
 
         train_time_sample.append(time.time()-t1)
         train_time.append(time.time()-t1-sample_time)
+        
         # Validation
+        save_model(sess, saver, checkpoint_dir)
         cost, acc, f1, duration = evaluate(test_features, test_supports, test_probs, y_test, [], placeholders)
         acc_val.append(acc)
         # if epoch > 50 and acc>max_acc:
