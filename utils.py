@@ -542,7 +542,8 @@ def prepare_gfsdata(dataset, max_degree, seed=None):
 
 
 def prepare_dataset(dataset, max_degree):
-    if dataset in ('reddit', 'flickr', 'arxiv', 'yelp', 'products'):
+    if dataset in ('reddit', 'flickr', 'arxiv', 'yelp', 'products',
+                   'proteins', 'blogcat', 'patents'):
         # TODO: Remember that Yelp is a multi-label dataset!
         return prepare_gfsdata(dataset, max_degree)
     elif dataset in ('cora', 'citeseer', 'pubmed'):
