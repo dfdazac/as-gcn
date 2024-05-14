@@ -77,14 +77,21 @@ def compute_adjlist(sp_adj, max_degree):
     adj_val = np.zeros((num_data+1, max_degree), dtype=np.float32)
 
     for v in range(num_data):
-        neighbors = np.nonzero(sp_adj[v, :])[1]
+        row_start = sp_adj.indptr[v]
+        row_end = sp_adj.indptr[v+1]
+        neighbors = sp_adj.indices[row_start:row_end]
+        values = sp_adj.data[row_start:row_end]
+        
         len_neighbors = len(neighbors)
         if len_neighbors > max_degree:
-            neighbors = np.random.choice(neighbors, max_degree, replace=False)
-            adj[v] = neighbors
-            adj_val[v, :len_neighbors] = sp_adj[v, neighbors].toarray()
+            selected_indices = np.random.choice(len_neighbors, max_degree, replace=False)
+            selected_neighbors = neighbors[selected_indices]
+            selected_values = values[selected_indices]
         else:
-            adj[v, :len_neighbors] = neighbors
-            adj_val[v, :len_neighbors] = sp_adj[v, neighbors].toarray()
+            selected_neighbors = neighbors
+            selected_values = values
+        
+        adj[v, :len(selected_neighbors)] = selected_neighbors
+        adj_val[v, :len(selected_neighbors)] = selected_values
 
     return adj, adj_val

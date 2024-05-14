@@ -496,7 +496,7 @@ def prepare_gfsdata(dataset, max_degree, seed=None):
         'products': gfsdata.get_products,
         'proteins': gfsdata.get_proteins,
         'blogcat': gfsdata.get_blogcat,
-        'patents': partial(gfsdata.get_linkx_dataset, seed=seed)
+        'patents': partial(gfsdata.get_linkx_dataset, name='snap-patents', seed=seed)
     }
 
     if dataset in dataset_to_fn:
