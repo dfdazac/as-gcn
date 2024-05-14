@@ -6,8 +6,9 @@ from sparse_tensor_utils import *
 class Sampler(object):
     """Sampling and Network Constructing"""
 
-    def __init__(self, placeholders, **kwargs):
-        allowed_kwargs = {'num_layers', 'input_dim', 'layer_sizes', 'scope'}
+    def __init__(self, placeholders, learn_embeddings=False, num_nodes=None, **kwargs):
+        allowed_kwargs = {'num_layers', 'input_dim', 'layer_sizes', 'scope',
+                          'learn_embeddings', 'num_nodes'}
         for kwarg in kwargs.keys():
             assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
 
@@ -22,7 +23,17 @@ class Sampler(object):
 
         self.adj = tf.Variable(placeholders['adj'], trainable=False, name="adj")
         self.adj_val = tf.Variable(placeholders['adj_val'], trainable=False, name="adj_val")
-        self.x = tf.Variable(placeholders['features'], trainable=False, name="x")
+
+        self.learn_embeddings = learn_embeddings
+        
+        if self.learn_embeddings:
+            with tf.variable_scope('embedding_scope', reuse=tf.AUTO_REUSE):
+                self.embeddings = tf.get_variable('node_embeddings',
+                                             [num_nodes + 1, self.input_dim],
+                                             initializer=tf.random_uniform_initializer(-1.0, 1.0))
+            self.x = self.embeddings
+        else:
+            self.x = tf.Variable(placeholders['features'], trainable=False, name="x")
 
         self.num_data = tf.shape(self.adj)[0]
 
@@ -37,12 +48,14 @@ class SamplerAdapt(Sampler):
         all_support = [[]] * (self.num_layers - 1)
         all_p_u = [[]] * (self.num_layers - 1)
         all_x_u = [[]] * self.num_layers
+        all_u = [[]] * self.num_layers
 
         # sample top-1 layer
         this_x_v = tf.gather(self.x, v)
         this_adj = tf.gather(self.adj, v)
         this_adj_val = tf.gather(self.adj_val, v)
         all_x_u[self.num_layers - 1] = this_x_v
+        all_u[self.num_layers - 1] = v
 
         # top-down sampling from top-2 layer to the input layer
         for i in range(self.num_layers - 1):
@@ -58,8 +71,9 @@ class SamplerAdapt(Sampler):
             all_x_u[layer] = this_x_v
             all_support[layer] = support
             all_p_u[layer] = p_u
+            all_u[layer] = u_sampled
 
-        return all_x_u, all_support, all_p_u
+        return all_x_u, all_support, all_p_u, all_u
 
     def one_layer_sampling(self, adj, adj_val, x_v, output_size):
         """layer wise sampling """

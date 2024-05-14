@@ -527,7 +527,11 @@ def prepare_gfsdata(dataset, max_degree, seed=None):
     val_index = np.where(val_mask)[0]
     test_index = np.where(test_mask)[0]
 
-    features = data.x.numpy()
+    if data.x is not None:
+        features = data.x.numpy()
+    else:
+        features = np.arange(data.num_nodes).reshape(data.num_nodes, 1)
+
     train_features = features[train_index]
     input_dim = features.shape[1]
 

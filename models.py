@@ -189,11 +189,28 @@ class GCN(Model):
 
 
 class GCNAdapt(Model):
-    def __init__(self, placeholders, input_dim, sample_train=False, **kwargs):
+    def __init__(self, placeholders, input_dim, sample_train=False,
+                 learn_embeddings=False, num_nodes=None, **kwargs):
         super(GCNAdapt, self).__init__(**kwargs)
-        self.features = placeholders['features_inputs']
-        self.inputs = self.features[0]
+
+        self.learn_embeddings = learn_embeddings
+        self.num_nodes = num_nodes
         self.input_dim = input_dim
+
+        if self.learn_embeddings:
+            self.node_ids = placeholders['node_ids']
+            with tf.variable_scope('embedding_scope', reuse=tf.AUTO_REUSE):
+                self.embeddings = tf.get_variable('node_embeddings',
+                                                  [self.num_nodes + 1, self.input_dim],
+                                                  initializer=tf.random_uniform_initializer(-1.0, 1.0))
+
+            self.features = [tf.nn.embedding_lookup(self.embeddings, node_ids) for node_ids in self.node_ids]
+            self.inputs = self.features[0]
+        else:
+            self.features = placeholders['features_inputs']
+            self.inputs = self.features[0]
+
+
         # self.input_dim = self.inputs.get_shape().as_list()[1]  # To be supported in future Tensorflow versions
         self.output_dim = placeholders['labels'].get_shape().as_list()[1]
         self.placeholders = placeholders
