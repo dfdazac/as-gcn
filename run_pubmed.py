@@ -9,6 +9,7 @@ from __future__ import print_function
 
 # noinspection PyUnresolvedReferences
 import torch
+import uuid
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
@@ -160,7 +161,7 @@ def main(rank1, rank0):
 
     # Prepare training
     saver = tf.train.Saver()
-    checkpoint_path = os.path.join('checkpoints', f'{FLAGS.dataset}-{FLAGS.hidden1}-{FLAGS.learning_rate}-{FLAGS.seed}', 'model.ckpt')
+    checkpoint_path = os.path.join('checkpoints', f'{FLAGS.dataset}-{FLAGS.hidden1}-{FLAGS.learning_rate}-{FLAGS.seed}-{uuid.uuid4()}', 'model.ckpt')
     # save_dir = "tmp/" + FLAGS.dataset + '_' + str(FLAGS.skip) + '_' + str(FLAGS.var) + '_' + str(FLAGS.gpu)
     acc_val = []
     acc_train = []
