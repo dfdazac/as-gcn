@@ -160,7 +160,7 @@ def main(rank1, rank0):
 
     # Prepare training
     saver = tf.train.Saver()
-    checkpoint_path = os.path.join('checkpoints', f'{FLAGS.dataset}-{FLAGS.hidden1}-{FLAGS.learning_rate}', 'model.ckpt')
+    checkpoint_path = os.path.join('checkpoints', f'{FLAGS.dataset}-{FLAGS.hidden1}-{FLAGS.learning_rate}-{FLAGS.seed}', 'model.ckpt')
     # save_dir = "tmp/" + FLAGS.dataset + '_' + str(FLAGS.skip) + '_' + str(FLAGS.var) + '_' + str(FLAGS.gpu)
     acc_val = []
     acc_train = []
