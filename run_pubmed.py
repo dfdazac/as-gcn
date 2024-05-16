@@ -10,6 +10,7 @@ from __future__ import print_function
 # noinspection PyUnresolvedReferences
 import torch
 import uuid
+import shutil
 
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
@@ -48,7 +49,7 @@ flags.DEFINE_integer('rank', 128, 'The number of nodes per layer.')
 flags.DEFINE_integer('max_degree', 32, 'Maximum degree for constructing the adjacent matrix.')
 flags.DEFINE_string('gpu', '0', 'The gpu to be applied.')
 flags.DEFINE_string('sampler_device', 'cpu', 'The device for sampling: cpu or gpu.')
-flags.DEFINE_integer('eval_frequency', 1, 'Number of epochs between evaluations.')
+flags.DEFINE_integer('eval_frequency', 10, 'Number of epochs between evaluations.')
 
 flags.DEFINE_integer('seed', 123, 'Random seed.')
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
@@ -243,6 +244,10 @@ def main(rank1, rank0):
     print("rank1 = {}".format(rank1), "rank0 = {}".format(rank0), "test_loss=", "{:.5f}".format(test_cost),
           "test_acc=", "{:.5f}".format(test_acc),
           "test_f1=", "{:.5f}".format(test_f1), "training time per epoch=", "{:.5f}".format(train_duration))
+
+    checkpoint_dir = os.path.dirname(checkpoint_path)
+    print(f'Cleaning up, deleting {checkpoint_dir}')
+    shutil.rmtree(checkpoint_dir)
 
 
 if __name__ == "__main__":
