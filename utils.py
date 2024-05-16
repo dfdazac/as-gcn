@@ -12,6 +12,7 @@ from networkx.readwrite import json_graph
 import torch_geometric.utils as pygutils
 import torch
 from functools import partial
+import os.path as osp
 
 import gflow_sampling.modules.data as gfsdata
 
@@ -487,7 +488,7 @@ def prepare_pubmed(dataset, max_degree):
     return norm_adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index
 
 
-def prepare_gfsdata(dataset, max_degree, seed=None):
+def prepare_gfsdata(dataset, max_degree, seed=None, split_id=0):
     dataset_to_fn = {
         'reddit': gfsdata.get_reddit,
         'flickr': gfsdata.get_flickr,
@@ -495,12 +496,16 @@ def prepare_gfsdata(dataset, max_degree, seed=None):
         'yelp': gfsdata.get_yelp,
         'products': gfsdata.get_products,
         'proteins': gfsdata.get_proteins,
-        'blogcat': gfsdata.get_blogcat,
-        'patents': partial(gfsdata.get_linkx_dataset, name='snap-patents', seed=seed)
+        'blogcat': partial(gfsdata.get_blogcat, name=None, split_id=split_id),
+        'patents': partial(gfsdata.get_linkx_dataset, name='snap-patents', seed=seed),
+        'dblp': partial(gfsdata.get_dblp, name=None, seed=seed),
     }
 
     if dataset in dataset_to_fn:
-        data, num_features, num_classes = dataset_to_fn[dataset](root='data')
+        root = 'data'
+        if dataset == 'dblp':
+            root = osp.join(root, 'dblp')
+        data, num_features, num_classes = dataset_to_fn[dataset](root=root)
     else:
         raise ValueError(f'Unknown dataset {dataset}')
 
@@ -545,11 +550,11 @@ def prepare_gfsdata(dataset, max_degree, seed=None):
     return norm_adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index
 
 
-def prepare_dataset(dataset, max_degree):
+def prepare_dataset(dataset, max_degree, seed=None, split_id=0):
     if dataset in ('reddit', 'flickr', 'arxiv', 'yelp', 'products',
-                   'proteins', 'blogcat', 'patents'):
+                   'proteins', 'blogcat', 'patents', 'dblp'):
         # TODO: Remember that Yelp is a multi-label dataset!
-        return prepare_gfsdata(dataset, max_degree)
+        return prepare_gfsdata(dataset, max_degree, seed, split_id)
     elif dataset in ('cora', 'citeseer', 'pubmed'):
         return prepare_pubmed(dataset, max_degree)
     else:

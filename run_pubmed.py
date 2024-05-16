@@ -52,6 +52,7 @@ flags.DEFINE_string('sampler_device', 'cpu', 'The device for sampling: cpu or gp
 flags.DEFINE_integer('eval_frequency', 10, 'Number of epochs between evaluations.')
 
 flags.DEFINE_integer('seed', 123, 'Random seed.')
+flags.DEFINE_integer('split_id', 0, 'Random seed.')
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
 
 seed = FLAGS.seed
@@ -61,7 +62,7 @@ tf.set_random_seed(seed)
 def main(rank1, rank0):
 
     # Prepare data
-    adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index = prepare_dataset(FLAGS.dataset, FLAGS.max_degree)
+    adj, adj_train, adj_val_train, features, train_features, y_train, y_test, test_index = prepare_dataset(FLAGS.dataset, FLAGS.max_degree, FLAGS.seed, FLAGS.split_id)
     print('preparation done!')
     learn_embeddings = features.shape[1] == 1
 
